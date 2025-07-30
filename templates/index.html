@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SBI Analyzer</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>📄 SBI Statement Analyzer</h1>
+    <p class="subtitle">Upload your bank statement (.csv) to get insights</p>
+
+    <form id="uploadForm" action="/analyze" method="post" enctype="multipart/form-data">
+      <label for="csvFile" class="upload-box">
+        <input type="file" name="file" id="csvFile" accept=".csv" required hidden />
+        <span>📁 Click to Upload CSV</span>
+      </label>
+      <button type="submit">📊 Analyze</button>
+    </form>
+
+    <div class="result" id="resultSection" style="display:none;">
+      <h2>📈 Analysis Output</h2>
+      <img id="barChart" src="" alt="Bar Chart">
+      <img id="lineChart" src="" alt="Line Chart">
+      <pre id="textOutput"></pre>
+      <p class="note">📂 Excel report saved inside <b>/reports</b> folder.</p>
+      <pre id="textOutput" style="max-width: 100%; overflow-x: auto;"></pre>
+    </div>
+  </div>
+
+  <!-- ✅ JS placed here after DOM elements -->
+  <script>
+    const form = document.getElementById('uploadForm');
+    const resultSection = document.getElementById('resultSection');
+    const barChart = document.getElementById('barChart');
+    const lineChart = document.getElementById('lineChart');
+    const textOutput = document.getElementById('textOutput');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const fileInput = document.getElementById('csvFile');
+      const formData = new FormData();
+      formData.append('file', fileInput.files[0]);
+
+      fetch('/analyze', {
+        method: 'POST',
+        body: formData
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            alert(data.error);
+            return;
+          }
+
+          // Show result section
+          resultSection.style.display = 'block';
+
+          // Display charts
+          barChart.src = '/' + data.bar_chart.replaceAll('\\', '/');
+          lineChart.src = '/' + data.line_chart.replaceAll('\\', '/');
+
+          // Display insights
+          textOutput.textContent = data.insights.join('\n') +
+            `\n\nTotal Credit: ₹${data.total_in}\nTotal Debit: ₹${data.total_out}\nNet Change: ₹${data.net_change}`;
+        })
+        .catch(error => {
+          alert('Error analyzing file. Please try again.');
+          console.error(error);
+        });
+    });
+  </script>
+</body>
+</html>
